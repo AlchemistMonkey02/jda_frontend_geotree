@@ -33,11 +33,7 @@ const parseWKT = (wkt) => {
 
     // Remove "MULTIPOLYGON" and outer parentheses
     const cleaned = wkt.replace('MULTIPOLYGON', '').trim();
-    // Use regex to find coordinate groups inside brackets
-    // Example: (((75.74... 25.24..., ...)))
 
-    // Naively split by parentheses to find coordinate sets
-    // This is a simplified parser for standard MULTIPOLYGON structure
     try {
         const polygons = [];
         // Match content inside the outermost usually (((...)))
@@ -48,25 +44,42 @@ const parseWKT = (wkt) => {
             // Remove (( and ))
             const inner = set.replace(/\(\(/g, '').replace(/\)\)/g, '');
             const points = inner.split(',').map(pair => {
-                const [lng, lat] = pair.trim().split(/\s+/).map(Number);
-                return [lat, lng]; // Leaflet expects [lat, lng]
-            });
-            polygons.push(points);
+                const parts = pair.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    const lng = Number(parts[0]);
+                    const lat = Number(parts[1]);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        return [lat, lng]; // Leaflet expects [lat, lng]
+                    }
+                }
+                return null;
+            }).filter(p => p !== null); // Filter out any invalid points
+
+            if (points.length > 0) {
+                polygons.push(points);
+            }
         });
-        return polygons;
+        return polygons.length > 0 ? polygons : null;
     } catch (e) {
         console.error("WKT Parse Error", e);
         return null;
     }
 };
 
-const LocationMap = ({ onLocationUpdate, initialPosition }) => {
+const LocationMap = React.forwardRef(({ onLocationUpdate, initialPosition }, ref) => {
     const { showSuccess, showError } = useToast();
     const [position, setPosition] = useState(initialPosition || [26.9124, 75.7873]); // Default Jaipur
     const [loading, setLoading] = useState(false);
     const [addressDetails, setAddressDetails] = useState(null);
     const [boundary, setBoundary] = useState(null);
     const [permissionError, setPermissionError] = useState(false);
+
+    // Expose refreshLocation method to parent via ref
+    React.useImperativeHandle(ref, () => ({
+        refreshLocation: () => {
+            handleGetLocation();
+        }
+    }));
 
     const fetchAddressDetails = async (lat, lng) => {
         try {
@@ -171,13 +184,19 @@ const LocationMap = ({ onLocationUpdate, initialPosition }) => {
                 <div className="absolute top-3 right-3 z-[400] flex flex-col gap-2">
                     <button
                         onClick={handleGetLocation}
-                        className="w-10 h-10 bg-white rounded-xl shadow-lg text-[#2d4a22] flex items-center justify-center hover:bg-[#EAF5E5] active:scale-90 transition-all duration-300 group"
+                        className="w-10 h-10 bg-white rounded-xl shadow-lg text-black flex items-center justify-center hover:bg-[#EAF5E5] active:scale-90 transition-all duration-300 group"
                         title="Get Current Location"
                     >
                         {loading ? (
                             <div className="w-5 h-5 border-2 border-[#2d4a22] border-t-transparent rounded-full animate-spin"></div>
                         ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:text-[#7fb55c] transition-colors"><crosshair cx="12" cy="12" r="10"></crosshair><point x="12" y="12"></point></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:text-[#7fb55c] transition-colors">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="22" y1="12" x2="18" y2="12"></line>
+                                <line x1="6" y1="12" x2="2" y2="12"></line>
+                                <line x1="12" y1="6" x2="12" y2="2"></line>
+                                <line x1="12" y1="22" x2="12" y2="18"></line>
+                            </svg>
                         )}
                     </button>
                 </div>
@@ -235,6 +254,6 @@ const LocationMap = ({ onLocationUpdate, initialPosition }) => {
             )}
         </div>
     );
-};
+});
 
 export default LocationMap;

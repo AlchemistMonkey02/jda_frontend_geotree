@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext';
 import PlantSearch from '../components/plantation/PlantSearch';
 import EventSearch from '../components/plantation/EventSearch';
 import LocationMap from '../components/plantation/LocationMap';
+import { resizeImage } from '../utils/imageUtils';
 
 // Tree Data for Dropdowns
 // Tree Data for Dropdowns (Now loaded from API, but keeping structure for reference if needed or as fallback)
@@ -38,6 +39,8 @@ const IndividualPage = () => {
     const [image1File, setImage1File] = useState(null);
     const [image2Preview, setImage2Preview] = useState(null);
     const [image2File, setImage2File] = useState(null);
+
+    const locationMapRef = useRef(null);
 
     // Location
     const [position, setPosition] = useState([26.817331, 75.818598]);
@@ -109,13 +112,33 @@ const IndividualPage = () => {
         }));
     };
 
-    const handleImageUpload = (e, setPreview, setFile) => {
+    const handleImageUpload = async (e, setPreview, setFile) => {
         const file = e.target.files[0];
         if (file) {
-            setFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => setPreview(reader.result);
-            reader.readAsDataURL(file);
+            try {
+                // Resize image to max 800px width
+                const resizedFile = await resizeImage(file, 800);
+                setFile(resizedFile);
+
+                const reader = new FileReader();
+                reader.onloadend = () => setPreview(reader.result);
+                reader.readAsDataURL(resizedFile);
+
+                // Refresh location on image capture/upload
+                if (locationMapRef.current) {
+                    locationMapRef.current.refreshLocation();
+                    showSuccess("Updating location based on recent activity...");
+                }
+            } catch (error) {
+                console.error("Image processing failed", error);
+                showError("Failed to process image");
+                // Fallback to original file if resize fails? 
+                // For now just error out or use original
+                setFile(file);
+                const reader = new FileReader();
+                reader.onloadend = () => setPreview(reader.result);
+                reader.readAsDataURL(file);
+            }
         }
     };
 
@@ -309,6 +332,7 @@ const IndividualPage = () => {
                     {/* Compact Map - Replaced with LocationMap */}
                     <div className="mt-1">
                         <LocationMap
+                            ref={locationMapRef}
                             initialPosition={position}
                             onLocationUpdate={(data) => {
                                 setPosition([data.lat, data.lng]);
@@ -400,7 +424,7 @@ const IndividualPage = () => {
                 <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="w-full bg-[#2d4a22] text-white py-3 rounded-xl font-black text-base shadow-xl shadow-green-900/10 hover:bg-[#1a2e15] active:scale-95 transition-all mt-1 uppercase tracking-wide disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-[#2d4a22] text-white py-3 rounded-xl font-black text-base shadow-xl shadow-green-900/10 hover:bg-[#1a2e15] active:scale-95 transition-all mt-4 uppercase tracking-wide disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                     {loading ? 'Submitting...' : 'Submit'}
                 </button>
