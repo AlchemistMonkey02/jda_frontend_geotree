@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { resizeImage } from '../../utils/imageUtils';
 
 const PlantationUpload = () => {
     const fileInputRef1 = useRef(null);
@@ -10,14 +11,24 @@ const PlantationUpload = () => {
         ref.current.click();
     };
 
-    const handleFileChange = (e, setImage) => {
+    const handleFileChange = async (e, setImage) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImage(reader.result);
-            };
-            reader.readAsDataURL(file);
+            try {
+                const resizedFile = await resizeImage(file, 1280, 0.8);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setImage(reader.result);
+                };
+                reader.readAsDataURL(resizedFile);
+            } catch (error) {
+                console.error("Image processing failed", error);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setImage(reader.result);
+                };
+                reader.readAsDataURL(file);
+            }
         }
     };
 

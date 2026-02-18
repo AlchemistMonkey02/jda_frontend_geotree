@@ -1,10 +1,12 @@
 /**
- * Resizes an image file to a maximum width, maintaining aspect ratio.
+ * Resizes an image file to a maximum dimension (width or height), maintaining aspect ratio.
+ * This mimics WhatsApp-like behavior by reducing pixel density and file size.
  * @param {File} file - The image file to resize.
- * @param {number} maxWidth - The maximum width allowed (default: 800px).
+ * @param {number} maxDimension - The maximum dimension allowed (default: 1280px).
+ * @param {number} quality - The compression quality (0 to 1, default: 0.8).
  * @returns {Promise<File>} - A promise that resolves to the resized File object.
  */
-export const resizeImage = (file, maxWidth = 800) => {
+export const resizeImage = (file, maxDimension = 1280, quality = 0.8) => {
     return new Promise((resolve, reject) => {
         if (!file || !file.type.match(/image.*/)) {
             reject(new Error("File is not an image"));
@@ -18,15 +20,28 @@ export const resizeImage = (file, maxWidth = 800) => {
                 let width = image.width;
                 let height = image.height;
 
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
+                // WhatsApp-like logic: Ensure longest side is within maxDimension
+                if (width > height) {
+                    if (width > maxDimension) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    }
+                } else {
+                    if (height > maxDimension) {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
                 }
 
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
+
+                // Use better image smoothing
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+
                 ctx.drawImage(image, 0, 0, width, height);
 
                 canvas.toBlob((blob) => {
@@ -34,13 +49,13 @@ export const resizeImage = (file, maxWidth = 800) => {
                         reject(new Error("Canvas to Blob conversion failed"));
                         return;
                     }
-                    // Create a new File object with the resized blob, preserving the original name and type
+                    // Create a new File object with the resized blob
                     const resizedFile = new File([blob], file.name, {
-                        type: file.type,
+                        type: 'image/jpeg', // Force jpeg for better compression
                         lastModified: Date.now(),
                     });
                     resolve(resizedFile);
-                }, file.type, 0.85); // 0.85 quality for good compression/quality balance
+                }, 'image/jpeg', quality);
             };
             image.onerror = () => reject(new Error("Failed to load image"));
             image.src = readerEvent.target.result;
@@ -49,3 +64,4 @@ export const resizeImage = (file, maxWidth = 800) => {
         reader.readAsDataURL(file);
     });
 };
+

@@ -138,8 +138,8 @@ const IndividualPage = () => {
         const file = e.target.files[0];
         if (file) {
             try {
-                // Resize image to max 800px width
-                const resizedFile = await resizeImage(file, 800);
+                // Resize image like WhatsApp (max 1280px on longest side, 0.8 quality)
+                const resizedFile = await resizeImage(file, 1280, 0.8);
                 setFile(resizedFile);
 
                 const reader = new FileReader();
@@ -149,13 +149,12 @@ const IndividualPage = () => {
                 // Refresh location on image capture/upload
                 if (locationMapRef.current) {
                     locationMapRef.current.refreshLocation();
-                    showSuccess("Updating location based on recent activity...");
+                    showSuccess("Processing image and updating location...");
                 }
             } catch (error) {
                 console.error("Image processing failed", error);
                 showError("Failed to process image");
-                // Fallback to original file if resize fails? 
-                // For now just error out or use original
+                // Fallback to original
                 setFile(file);
                 const reader = new FileReader();
                 reader.onloadend = () => setPreview(reader.result);
@@ -254,15 +253,26 @@ const IndividualPage = () => {
         setSelfieFile(null);
     };
 
-    const handleSelfieChange = (e) => {
+    const handleSelfieChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setSelfieFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setSelfiePreview(reader.result);
-            };
-            reader.readAsDataURL(file);
+            try {
+                // Resize selfie like WhatsApp
+                const resizedFile = await resizeImage(file, 1280, 0.8);
+                setFile(resizedFile);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setSelfiePreview(reader.result);
+                };
+                reader.readAsDataURL(resizedFile);
+            } catch (error) {
+                console.error("Selfie processing failed", error);
+                // Fallback
+                setFile(file);
+                const reader = new FileReader();
+                reader.onloadend = () => setSelfiePreview(reader.result);
+                reader.readAsDataURL(file);
+            }
         }
     };
 

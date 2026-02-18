@@ -99,12 +99,12 @@ const Login = () => {
 
     return (
         <div
-            className="h-[100dvh] w-full flex flex-col font-outfit relative overflow-hidden bg-[#E8EDDE] select-none bg-cover bg-center bg-no-repeat"
+            className="min-h-[100dvh] w-full flex flex-col font-outfit relative overflow-y-auto bg-[#E8EDDE] select-none bg-cover bg-center bg-no-repeat bg-fixed"
             style={{ backgroundImage: "url('/images/login bg.png')" }}
         >
 
             {/* Top Section: Logo & Tagline */}
-            <div className="w-full flex flex-col items-center pt-12 sm:pt-16 z-0 text-center px-6">
+            <div className="w-full flex flex-col items-center pt-12 sm:pt-16 z-0 text-center px-6 mb-8">
                 <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center transition-transform duration-300">
                     <img src="/images/jda.png" alt="JDA Logo" className="w-full h-full object-contain drop-shadow-sm" />
                 </div>
@@ -114,7 +114,7 @@ const Login = () => {
             </div>
 
             {/* Bottom Section: Dark Green Wave & Form */}
-            <div className="absolute bottom-0 left-0 right-0 w-full z-10">
+            <div className="mt-auto w-full z-10">
 
                 {/* Wave SVG */}
                 <div className="w-full relative -mb-1">
@@ -124,7 +124,7 @@ const Login = () => {
                 </div>
 
                 {/* Form Container */}
-                <div className="bg-[#2d4a22] w-full px-8 pb-6 pt-2 flex flex-col rounded-b-none min-h-[400px]">
+                <div className="bg-[#2d4a22] w-full px-8 pb-12 pt-4 flex flex-col rounded-b-none min-h-[420px]">
 
                     {/* Login Heading */}
                     <div className="mb-5 relative flex justify-between items-end">
