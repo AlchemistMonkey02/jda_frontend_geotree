@@ -1,10 +1,11 @@
-export const API_BASE_URL = 'http://localhost:5000/api';
+export const API_BASE_URL = 'http://localhost:50001/api';
 
 export const ENDPOINTS = {
     AUTH: {
         SEND_OTP: `${API_BASE_URL}/auth/send-otp`,
         SIGNUP: `${API_BASE_URL}/auth/signup`,
         LOGIN: `${API_BASE_URL}/auth/login`,
+        LOGIN_PASSWORD: `${API_BASE_URL}/auth/login-password`,
         PROFILE: `${API_BASE_URL}/auth/profile`
     },
     PLANTATION: {
