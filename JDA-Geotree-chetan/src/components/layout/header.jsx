@@ -84,6 +84,7 @@ const Header = () => {
 
                         {/* Notifications Button */}
                         <button
+                            onClick={() => navigate('/notifications')}
                             className="relative p-2.5 rounded-full bg-gray-50 hover:bg-[#EAF5E5] text-gray-500 hover:text-[#2d4a22] transition-all duration-300 hover:scale-105 active:scale-95 group"
                             aria-label="Notifications"
                         >

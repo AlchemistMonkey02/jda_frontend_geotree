@@ -6,6 +6,7 @@ import IndividualPage from './pages/individual'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import MyCertificates from './pages/MyCertificates'
 import HistoryPage from './pages/History'
+import Notifications from './pages/Notifications'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import Login from './components/auth/Login'
 import SplashScreen from './components/SplashScreen'
@@ -78,6 +79,7 @@ function AppContent() {
               <Route path="/individual" element={<IndividualPage />} />
               <Route path="/my-certificates" element={<MyCertificates />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/notifications" element={<Notifications />} />
             </Routes>
           </div>
         </main>
