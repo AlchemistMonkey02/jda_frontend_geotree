@@ -183,7 +183,7 @@ const MyCertificates = () => {
 
                                 <p className="text-gray-500 mt-2 text-sm sm:text-base">This is to certify that</p>
                                 <h2 className="text-xl sm:text-3xl font-cursive text-[#2d4a22] border-b-2 border-[#dcebd6] px-6 py-1 font-bold">
-                                    {user?.name || "User"}
+                                    {selectedCert.name || user?.name || "User"}
                                 </h2>
 
                                 <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mt-1 max-w-[80%]">
