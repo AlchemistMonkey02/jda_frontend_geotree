@@ -44,6 +44,7 @@ const IndividualPage = () => {
 
     // Location
     const [position, setPosition] = useState([26.817331, 75.818598]);
+    const [addressString, setAddressString] = useState(''); // Store formatted address string
 
     // Details - Initialize with keys matching the form
     const [plantData, setPlantData] = useState({
@@ -183,6 +184,9 @@ const IndividualPage = () => {
             formData.append('landOwnership', ownership);
             formData.append('lat', position[0]);
             formData.append('lng', position[1]);
+            if (addressString) {
+                formData.append('address', addressString);
+            }
             formData.append('siteImage', image1File);
             formData.append('plantationImage', image2File);
 
@@ -215,6 +219,10 @@ const IndividualPage = () => {
             const formData = new FormData();
             formData.append('plantationId', plantationId);
             formData.append('name', certName);
+            // Append formatted address if available
+            if (addressString) {
+                formData.append('location', addressString);
+            }
             formData.append('selfieImage', selfieFile);
 
             await client.post(ENDPOINTS.CERTIFICATE.GENERATE, formData, {
@@ -358,8 +366,15 @@ const IndividualPage = () => {
                             initialPosition={position}
                             onLocationUpdate={(data) => {
                                 setPosition([data.lat, data.lng]);
-                                // Store address details if needed, e.g in a separate state or plantData
-                                // console.log("New Address:", data.address);
+                                // Format address from properties if available
+                                if (data.address) {
+                                    const { vllg_name, gp_name, block_name, dist_name } = data.address;
+                                    const formatted = [vllg_name, gp_name, block_name, dist_name]
+                                        .filter(Boolean)
+                                        .join(', ');
+                                    setAddressString(formatted);
+                                    // console.log("New Address:", formatted);
+                                }
                             }}
                         />
                     </div>
@@ -398,7 +413,7 @@ const IndividualPage = () => {
                             )}
                         </div>
 
-                        
+
                         <div className="col-span-2">
                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Land Ownership</label>
                             <div className="relative">
