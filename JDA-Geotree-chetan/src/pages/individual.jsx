@@ -69,6 +69,28 @@ const IndividualPage = () => {
     const [certName, setCertName] = useState('');
     const [events, setEvents] = useState([]);
 
+    // Land Ownership Options
+    const [ownershipOptions, setOwnershipOptions] = useState([]);
+    const [loadingOwnership, setLoadingOwnership] = useState(false);
+
+    useEffect(() => {
+        const fetchOwnerships = async () => {
+            setLoadingOwnership(true);
+            try {
+                const response = await client.get('/options/land-ownership');
+                if (response.data.success) {
+                    const sortedOptions = response.data.data.sort((a, b) => a.name.localeCompare(b.name));
+                    setOwnershipOptions(sortedOptions);
+                }
+            } catch (error) {
+                console.error("Failed to fetch ownership options", error);
+            } finally {
+                setLoadingOwnership(false);
+            }
+        };
+        fetchOwnerships();
+    }, []);
+
     // Event fetching is now handled by EventSearch component
     // useEffect(() => {
     //     const fetchEvents = async () => { ... };
@@ -376,6 +398,37 @@ const IndividualPage = () => {
                             )}
                         </div>
 
+                        
+                        <div className="col-span-2">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Land Ownership</label>
+                            <div className="relative">
+                                <select
+                                    value={ownership}
+                                    onChange={(e) => setOwnership(e.target.value)}
+                                    className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-xs font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] appearance-none border border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
+                                    disabled={loadingOwnership}
+                                >
+                                    <option value="">Select Type</option>
+                                    {ownershipOptions.map((opt) => (
+                                        <option key={opt.id} value={opt.name}>{opt.name}</option>
+                                    ))}
+                                    {!loadingOwnership && ownershipOptions.length === 0 && (
+                                        <>
+                                            <option value="Private">Private</option>
+                                            <option value="Government">Government</option>
+                                            <option value="Community">Community</option>
+                                        </>
+                                    )}
+                                </select>
+                                {loadingOwnership && (
+                                    <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                                        <div className="w-3 h-3 border-2 border-[#7fb55c] border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                )}
+                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                            </div>
+                        </div>
+
                         {/* Height Input with Unit Selection */}
                         <div className="col-span-2">
                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Height</label>
@@ -405,18 +458,6 @@ const IndividualPage = () => {
                             </div>
                         </div>
 
-                        <div className="col-span-2">
-                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Land Ownership</label>
-                            <div className="relative">
-                                <select value={ownership} onChange={(e) => setOwnership(e.target.value)} className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-xs font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] appearance-none border border-gray-100">
-                                    <option value="">Select Type</option>
-                                    <option value="Private">Private</option>
-                                    <option value="Government">Government</option>
-                                    <option value="Community">Community</option>
-                                </select>
-                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
