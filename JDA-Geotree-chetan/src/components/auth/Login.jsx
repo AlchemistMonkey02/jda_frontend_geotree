@@ -1,14 +1,49 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import { ENDPOINTS } from '../../api/config';
 
 const Login = ({ onLogin }) => {
     const [mobileNumber, setMobileNumber] = useState('');
     const [otp, setOtp] = useState('');
+    const [isOtpSent, setIsOtpSent] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSendOtp = async (e) => {
         e.preventDefault();
-        if (mobileNumber.length >= 10) {
-            onLogin();                             // Proceed to main app
+        if (!mobileNumber || mobileNumber.length < 10) {
+            alert('Please enter a valid mobile number');
+            return;
+        }
+        setLoading(true);
+        try {
+            await axios.post(ENDPOINTS.AUTH.SEND_OTP, { mobileNumber });
+            setIsOtpSent(true);
+            alert('OTP Sent: 123456'); // Mock OTP alert for dev convenience
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to send OTP');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const response = await axios.post(ENDPOINTS.AUTH.LOGIN, { mobileNumber, otp });
+            const { token, user } = response.data;
+
+            // Save to localStorage
+            localStorage.setItem('user', JSON.stringify({ ...user, token })); // Save flattened for easier access
+
+            onLogin();
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Login Failed. Invalid OTP?');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -43,11 +78,13 @@ const Login = ({ onLogin }) => {
 
                     {/* Login Heading */}
                     <div className="mb-5 relative">
-                        <h2 className="text-3xl font-bold text-white tracking-wide">Login</h2>
+                        <h2 className="text-3xl font-bold text-white tracking-wide">
+                            {isOtpSent ? 'Verify OTP' : 'Login'}
+                        </h2>
                         <div className="absolute -bottom-2 left-0 w-12 h-1 bg-[#E8EDDE] rounded-full"></div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+                    <form onSubmit={isOtpSent ? handleLogin : handleSendOtp} className="w-full flex flex-col gap-4">
 
                         {/* Mobile Number */}
                         <div className="flex flex-col gap-2">
@@ -65,29 +102,32 @@ const Login = ({ onLogin }) => {
                                     onChange={(e) => setMobileNumber(e.target.value)}
                                     placeholder="+91 01234 56789"
                                     className="bg-transparent text-white placeholder-white/50 focus:outline-none w-full font-medium"
+                                    disabled={isOtpSent}
                                 />
                             </div>
                         </div>
 
-                        {/* OTP */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[#98AA88] font-bold text-sm tracking-wide">OTP</label>
-                            <div className="flex items-center border-b-2 border-[#E8EDDE]/50 focus-within:border-[#E8EDDE] transition-colors pb-2">
-                                <span className="text-[#E8EDDE] mr-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </span>
-                                <span className="text-white font-medium mr-1">|</span>
-                                <input
-                                    type="text"
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value)}
-                                    placeholder="012345"
-                                    className="bg-transparent text-white placeholder-white/50 focus:outline-none w-full font-medium"
-                                />
+                        {/* OTP Input */}
+                        {isOtpSent && (
+                            <div className="flex flex-col gap-2 animate-fade-in-up">
+                                <label className="text-[#98AA88] font-bold text-sm tracking-wide">OTP</label>
+                                <div className="flex items-center border-b-2 border-[#E8EDDE]/50 focus-within:border-[#E8EDDE] transition-colors pb-2">
+                                    <span className="text-[#E8EDDE] mr-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </span>
+                                    <span className="text-white font-medium mr-1">|</span>
+                                    <input
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        placeholder="012345"
+                                        className="bg-transparent text-white placeholder-white/50 focus:outline-none w-full font-medium"
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Remember & Resend */}
                         <div className="flex items-center justify-between text-xs sm:text-sm mt-1">
@@ -100,18 +140,31 @@ const Login = ({ onLogin }) => {
                                 />
                                 <span className="text-[#98AA88] group-hover:text-white transition-colors">Remember Me</span>
                             </label>
-                            <button type="button" className="text-[#E1E4CA] underline underline-offset-2 hover:text-white transition-colors">
-                                Resend otp?
-                            </button>
+                            {isOtpSent && (
+                                <button type="button" onClick={handleSendOtp} className="text-[#E1E4CA] underline underline-offset-2 hover:text-white transition-colors">
+                                    Resend otp?
+                                </button>
+                            )}
                         </div>
 
                         {/* Login Button */}
                         <button
                             type="submit"
-                            className="w-full py-4 mt-4 bg-[#E8EDDE] text-[#2d4a22] font-bold text-lg rounded-xl shadow-lg hover:bg-white active:scale-95 transition-all"
+                            disabled={loading}
+                            className="w-full py-4 mt-4 bg-[#E8EDDE] text-[#2d4a22] font-bold text-lg rounded-xl shadow-lg hover:bg-white active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            Login
+                            {loading ? 'Processing...' : (isOtpSent ? 'Verify & Login' : 'Send OTP')}
                         </button>
+
+                        {isOtpSent && (
+                            <button
+                                type="button"
+                                onClick={() => { setIsOtpSent(false); setOtp(''); }}
+                                className="text-white text-xs mt-2 text-center underline hover:text-[#E8EDDE]"
+                            >
+                                Change Number
+                            </button>
+                        )}
                     </form>
                 </div>
             </div>

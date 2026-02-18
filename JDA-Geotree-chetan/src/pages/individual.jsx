@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import axios from 'axios';
+import { ENDPOINTS, getMultipartHeaders } from '../api/config';
 
 // Fix for default marker icon in Leaflet + React
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -66,14 +68,17 @@ const IndividualPage = () => {
     // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalStep, setModalStep] = useState('selection'); // 'selection' or 'certificate'
-    const [selfieImage, setSelfieImage] = useState(null);
+    const [selfiePreview, setSelfiePreview] = useState(null);
+    const [selfieFile, setSelfieFile] = useState(null);
     const selfieInputRef = React.useRef(null);
 
     // Form and File Ref State
     const fileInputRef1 = useRef(null);
     const fileInputRef2 = useRef(null);
-    const [image1, setImage1] = useState(null);
-    const [image2, setImage2] = useState(null);
+    const [image1Preview, setImage1Preview] = useState(null);
+    const [image1File, setImage1File] = useState(null);
+    const [image2Preview, setImage2Preview] = useState(null);
+    const [image2File, setImage2File] = useState(null);
 
     // Location
     const [position, setPosition] = useState([26.817331, 75.818598]);
@@ -91,6 +96,11 @@ const IndividualPage = () => {
     // Ownership
     const [ownership, setOwnership] = useState('');
 
+    // API State
+    const [plantationId, setPlantationId] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [certName, setCertName] = useState('');
+
     const handlePlantChange = (e) => {
         const { name, value } = e.target;
         setPlantData(prev => {
@@ -107,19 +117,76 @@ const IndividualPage = () => {
         });
     };
 
-    const handleImageUpload = (e, setImage) => {
+    const handleImageUpload = (e, setPreview, setFile) => {
         const file = e.target.files[0];
         if (file) {
+            setFile(file);
             const reader = new FileReader();
-            reader.onloadend = () => setImage(reader.result);
+            reader.onloadend = () => setPreview(reader.result);
             reader.readAsDataURL(file);
         }
     };
 
-    const handleSubmit = () => {
-        setIsModalOpen(true);
-        setModalStep('selection');
+    const handleSubmit = async () => {
+        // Validation
+        if (!plantData.plantName || !image1File || !image2File) {
+            alert("Please fill all details and upload both photos.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('type', activeTab);
+            if (activeTab === 'event') formData.append('eventCode', plantData.eventCode);
+            formData.append('plantName', plantData.plantName);
+            formData.append('category', plantData.category);
+            formData.append('height', plantData.height);
+            formData.append('areaType', plantData.areaType);
+            formData.append('landOwnership', ownership);
+            formData.append('lat', position[0]);
+            formData.append('lng', position[1]);
+            formData.append('siteImage', image1File);
+            formData.append('plantationImage', image2File);
+
+            const response = await axios.post(ENDPOINTS.PLANTATION.CREATE, formData, getMultipartHeaders());
+
+            if (response.data.success) {
+                setPlantationId(response.data.data._id);
+                setIsModalOpen(true);
+                setModalStep('selection');
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to submit plantation.');
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const handleGenerateCertificate = async () => {
+        if (!selfieFile) {
+            alert("Please upload a selfie for the certificate.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('plantationId', plantationId);
+            formData.append('name', certName);
+            formData.append('selfieImage', selfieFile);
+
+            await axios.post(ENDPOINTS.CERTIFICATE.GENERATE, formData, getMultipartHeaders());
+
+            navigate('/my-certificates');
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to generate certificate.');
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const handleDownloadClick = () => {
         setModalStep('certificate');
@@ -133,15 +200,17 @@ const IndividualPage = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setModalStep('selection');
-        setSelfieImage(null);
+        setSelfiePreview(null);
+        setSelfieFile(null);
     };
 
     const handleSelfieChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            setSelfieFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setSelfieImage(reader.result);
+                setSelfiePreview(reader.result);
             };
             reader.readAsDataURL(file);
         }
@@ -204,10 +273,10 @@ const IndividualPage = () => {
                 <div className="grid grid-cols-2 gap-2">
                     {/* Photo 1: Site Prep */}
                     <div className="flex flex-col gap-1">
-                        <input type="file" ref={fileInputRef1} onChange={(e) => handleImageUpload(e, setImage1)} className="hidden" accept="image/*" />
+                        <input type="file" ref={fileInputRef1} onChange={(e) => handleImageUpload(e, setImage1Preview, setImage1File)} className="hidden" accept="image/*" />
                         <div onClick={() => fileInputRef1.current.click()} className="bg-white rounded-xl border border-dashed border-gray-300 aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-[#7fb55c] hover:bg-green-50/30 transition-all relative overflow-hidden group shadow-sm">
-                            {image1 ? (
-                                <img src={image1} alt="Site Prep" className="absolute inset-0 w-full h-full object-cover" />
+                            {image1Preview ? (
+                                <img src={image1Preview} alt="Site Prep" className="absolute inset-0 w-full h-full object-cover" />
                             ) : (
                                 <>
                                     <div className="w-16 h-16 mb-1 p-2 bg-green-50 rounded-full text-[#7fb55c] group-hover:scale-110 transition-transform flex items-center justify-center">
@@ -222,10 +291,10 @@ const IndividualPage = () => {
 
                     {/* Photo 2: Plantation */}
                     <div className="flex flex-col gap-1">
-                        <input type="file" ref={fileInputRef2} onChange={(e) => handleImageUpload(e, setImage2)} className="hidden" accept="image/*" />
+                        <input type="file" ref={fileInputRef2} onChange={(e) => handleImageUpload(e, setImage2Preview, setImage2File)} className="hidden" accept="image/*" />
                         <div onClick={() => fileInputRef2.current.click()} className="bg-white rounded-xl border border-dashed border-gray-300 aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-[#7fb55c] hover:bg-green-50/30 transition-all relative overflow-hidden group shadow-sm">
-                            {image2 ? (
-                                <img src={image2} alt="Planting" className="absolute inset-0 w-full h-full object-cover" />
+                            {image2Preview ? (
+                                <img src={image2Preview} alt="Planting" className="absolute inset-0 w-full h-full object-cover" />
                             ) : (
                                 <>
                                     <div className="w-16 h-16 mb-1 p-2 bg-green-50 rounded-full text-[#7fb55c] group-hover:scale-110 transition-transform flex items-center justify-center">
@@ -319,8 +388,6 @@ const IndividualPage = () => {
                         </div>
                     </div>
 
-
-
                     {/* Compact Map */}
                     <div className="mt-1">
                         <div className="relative w-full h-24 rounded-lg overflow-hidden border border-gray-200 shadow-inner">
@@ -344,9 +411,10 @@ const IndividualPage = () => {
                 {/* Submit Action */}
                 <button
                     onClick={handleSubmit}
-                    className="w-full bg-[#2d4a22] text-white py-3 rounded-xl font-black text-base shadow-xl shadow-green-900/10 hover:bg-[#1a2e15] active:scale-95 transition-all mt-1 uppercase tracking-wide"
+                    disabled={loading}
+                    className="w-full bg-[#2d4a22] text-white py-3 rounded-xl font-black text-base shadow-xl shadow-green-900/10 hover:bg-[#1a2e15] active:scale-95 transition-all mt-1 uppercase tracking-wide disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                    Submit
+                    {loading ? 'Submitting...' : 'Submit'}
                 </button>
             </div>
 
@@ -385,7 +453,13 @@ const IndividualPage = () => {
                                 <div className="flex flex-col gap-4">
                                     <div className="flex flex-col gap-2">
                                         <label className="text-sm font-bold text-[#2d4a22] ml-1">Your Name</label>
-                                        <input type="text" placeholder="Enter Full Name" className="w-full bg-[#f0fdf4] rounded-xl py-3.5 px-4 outline-none border border-transparent focus:border-[#7fb55c] text-gray-700 text-base font-semibold placeholder-gray-400/80 transition-all shadow-inner" />
+                                        <input
+                                            type="text"
+                                            value={certName}
+                                            onChange={(e) => setCertName(e.target.value)}
+                                            placeholder="Enter Full Name"
+                                            className="w-full bg-[#f0fdf4] rounded-xl py-3.5 px-4 outline-none border border-transparent focus:border-[#7fb55c] text-gray-700 text-base font-semibold placeholder-gray-400/80 transition-all shadow-inner"
+                                        />
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <label className="text-sm font-bold text-[#2d4a22] ml-1">Selfie with Plant</label>
@@ -401,8 +475,8 @@ const IndividualPage = () => {
                                             onClick={() => selfieInputRef.current?.click()}
                                             className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-[#7fb55c] transition-all group active:scale-[0.98]"
                                         >
-                                            {selfieImage ? (
-                                                <img src={selfieImage} alt="Selfie preview" className="w-full h-32 object-cover rounded-lg" />
+                                            {selfiePreview ? (
+                                                <img src={selfiePreview} alt="Selfie preview" className="w-full h-32 object-cover rounded-lg" />
                                             ) : (
                                                 <>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-[#7fb55c] mb-2 transition-colors"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
@@ -411,7 +485,9 @@ const IndividualPage = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <button onClick={() => navigate('/my-certificates')} className="w-full py-4 bg-[#7fb55c] text-white rounded-xl font-bold text-lg shadow-lg hover:bg-[#6da04e] hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all mt-2">Generate & Download</button>
+                                    <button onClick={handleGenerateCertificate} disabled={loading} className="w-full py-4 bg-[#7fb55c] text-white rounded-xl font-bold text-lg shadow-lg hover:bg-[#6da04e] hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all mt-2 disabled:opacity-70">
+                                        {loading ? 'Generating...' : 'Generate & Download'}
+                                    </button>
                                     <button onClick={() => setModalStep('selection')} className="text-xs sm:text-sm text-gray-400 font-bold hover:text-gray-600 transition-colors pt-2">← Back to options</button>
                                 </div>
                             </>

@@ -1,48 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-
-// Mock Data for Certificates - Expanded for Horizontal Scroll Demo
-const MOCK_CERTIFICATES = [
-    {
-        id: 1,
-        plantName: "Neem Tree",
-        location: "Kanak Ghati, Jaipur",
-        date: "10 Feb 2026",
-        image: "/images/upload1.png",
-        certificateId: "GEO-2026-001"
-    },
-    {
-        id: 2,
-        plantName: "Peepal Tree",
-        location: "Central Park, Jaipur",
-        date: "05 Feb 2026",
-        image: "/images/upload2.png",
-        certificateId: "GEO-2026-002"
-    },
-    {
-        id: 3,
-        plantName: "Banyan Tree",
-        location: "Jawahar Circle, Jaipur",
-        date: "01 Feb 2026",
-        image: "/images/upload1.png",
-        certificateId: "GEO-2026-003"
-    },
-    {
-        id: 4,
-        plantName: "Ashoka Tree",
-        location: "Smriti Van, Jaipur",
-        date: "25 Jan 2026",
-        image: "/images/upload2.png",
-        certificateId: "GEO-2026-004"
-    }
-];
+import axios from 'axios';
+import { ENDPOINTS, getAuthHeaders } from '../api/config';
 
 const MyCertificates = () => {
     const navigate = useNavigate();
     const [selectedCert, setSelectedCert] = useState(null);
+    const [certificates, setCertificates] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Fetch Certificates
+    useEffect(() => {
+        const fetchCertificates = async () => {
+            try {
+                const response = await axios.get(ENDPOINTS.CERTIFICATE.MY_CERTIFICATES, getAuthHeaders());
+                setCertificates(response.data);
+            } catch (err) {
+                console.error(err);
+                setError('Failed to load certificates');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCertificates();
+    }, []);
 
     const handleDownload = async () => {
         const element = document.getElementById('certificate-download-area');
@@ -70,6 +56,14 @@ const MyCertificates = () => {
             alert("Failed to download certificate. Please try again.");
         }
     };
+
+    if (loading) {
+        return <div className="flex h-screen items-center justify-center text-[#2d4a22]">Loading Certificates...</div>;
+    }
+
+    if (error) {
+        return <div className="flex h-screen items-center justify-center text-red-500">{error}</div>;
+    }
 
     return (
         <div className="flex flex-col gap-2 w-full relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-2 pb-6 font-outfit">
@@ -99,58 +93,62 @@ const MyCertificates = () => {
 
             {/* Certificates List */}
             <div className="flex flex-col gap-2">
-                {MOCK_CERTIFICATES.map((cert) => (
-                    <div key={cert.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative">
+                {certificates.length === 0 ? (
+                    <div className="text-center text-gray-400 mt-10">No certificates found. Create a plantation and generate one!</div>
+                ) : (
+                    certificates.map((cert) => (
+                        <div key={cert.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative">
 
-                        {/* Image at Right */}
-                        <div className="absolute top-2 right-2 z-10">
-                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shadow-sm border border-gray-100">
-                                <img
-                                    src={cert.image}
-                                    alt={cert.plantName}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                    onError={(e) => e.target.src = '/images/jda.png'}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                                <span className="absolute bottom-1 left-1 text-white text-[9px] font-bold bg-[#7fb55c] px-1.5 py-0.5 rounded-md shadow-sm">
-                                    {cert.date}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Content Section */}
-                        <div className="pr-24">
-                            {/* Details Section */}
-                            <div className="flex flex-col gap-1">
-                                <h3 className="text-sm sm:text-base font-bold text-[#2d4a22] leading-tight">{cert.plantName}</h3>
-                                <div className="flex items-center gap-1 text-xs text-gray-600">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c]"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
-                                    <span className="truncate max-w-[180px] sm:max-w-[250px] font-medium">{cert.location}</span>
+                            {/* Image at Right */}
+                            <div className="absolute top-2 right-2 z-10">
+                                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                                    <img
+                                        src={cert.image}
+                                        alt={cert.plantName}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        onError={(e) => e.target.src = '/images/jda.png'}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                                    <span className="absolute bottom-1 left-1 text-white text-[9px] font-bold bg-[#7fb55c] px-1.5 py-0.5 rounded-md shadow-sm">
+                                        {cert.date}
+                                    </span>
                                 </div>
-                                <p className="text-[10px] text-gray-400 font-mono">ID: {cert.certificateId}</p>
                             </div>
 
-                            {/* Actions */}
-                            <div className="grid grid-cols-2 gap-2 mt-2">
-                                <button
-                                    onClick={() => setSelectedCert(cert)}
-                                    className="py-1.5 px-3 rounded-lg bg-[#EAF5E5] text-[#2d4a22] font-bold text-xs hover:bg-[#dcebd6] active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
-                                    View
-                                </button>
-                                <button
-                                    onClick={() => setSelectedCert(cert)}
-                                    className="py-1.5 px-3 rounded-lg bg-[#2d4a22] text-white font-bold text-xs hover:bg-[#1a2e15] active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                                    Download
-                                </button>
+                            {/* Content Section */}
+                            <div className="pr-24">
+                                {/* Details Section */}
+                                <div className="flex flex-col gap-1">
+                                    <h3 className="text-sm sm:text-base font-bold text-[#2d4a22] leading-tight">{cert.plantName}</h3>
+                                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c]"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+                                        <span className="truncate max-w-[180px] sm:max-w-[250px] font-medium">{cert.location}</span>
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 font-mono">ID: {cert.certificateId}</p>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <button
+                                        onClick={() => setSelectedCert(cert)}
+                                        className="py-1.5 px-3 rounded-lg bg-[#EAF5E5] text-[#2d4a22] font-bold text-xs hover:bg-[#dcebd6] active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                        View
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedCert(cert)}
+                                        className="py-1.5 px-3 rounded-lg bg-[#2d4a22] text-white font-bold text-xs hover:bg-[#1a2e15] active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                                        Download
+                                    </button>
+                                </div>
                             </div>
+
                         </div>
-
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
 
             {/* Modal using Portal */}
@@ -182,7 +180,9 @@ const MyCertificates = () => {
                                 <p className="text-base font-serif text-[#7fb55c] italic -mt-1">of Plantation</p>
 
                                 <p className="text-gray-500 mt-2 text-sm sm:text-base">This is to certify that</p>
-                                <h2 className="text-xl sm:text-3xl font-cursive text-[#2d4a22] border-b-2 border-[#dcebd6] px-6 py-1 font-bold">Akshat</h2>
+                                <h2 className="text-xl sm:text-3xl font-cursive text-[#2d4a22] border-b-2 border-[#dcebd6] px-6 py-1 font-bold">
+                                    {JSON.parse(localStorage.getItem('user'))?.name || "User"}
+                                </h2>
 
                                 <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mt-1 max-w-[80%]">
                                     has successfully planted a <span className="font-bold text-[#1a2e15]">{selectedCert.plantName}</span> at <span className="font-bold text-[#1a2e15]">{selectedCert.location}</span> on {selectedCert.date}.

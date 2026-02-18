@@ -1,13 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { ENDPOINTS, getAuthHeaders } from '../../api/config';
 
 const Header = () => {
+    const navigate = useNavigate();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [userData, setUserData] = useState({
+        name: "User",
+        phone: "",
+        email: "",
+        role: "Member"
+    });
 
-    const userData = {
-        name: "Akshat",
-        phone: "+91 98765 43210",
-        email: "akshat@jda.gov.in"
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user && user.token) {
+                    // Optimistically set from local storage first if available
+                    setUserData(prev => ({
+                        ...prev,
+                        name: user.name || prev.name,
+                        phone: user.mobileNumber || prev.phone,
+                        email: user.email || prev.email,
+                        role: user.role || prev.role
+                    }));
+
+                    const response = await axios.get(ENDPOINTS.AUTH.PROFILE, getAuthHeaders());
+                    const { name, mobileNumber, email, role } = response.data;
+                    setUserData({
+                        name: name || "User",
+                        phone: mobileNumber || "",
+                        email: email || "Not provided",
+                        role: role || "Member"
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
+                // Optionally redirect to login if 401? For now just stay.
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        navigate('/login');
     };
 
     return (
@@ -133,7 +174,7 @@ const Header = () => {
                         {/* Content */}
                         <div className="pt-16 pb-8 px-8 text-center">
                             <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{userData.name}</h3>
-                            <p className="text-green-600 font-medium text-sm mt-1 uppercase tracking-widest">Administrator Member</p>
+                            <p className="text-green-600 font-medium text-sm mt-1 uppercase tracking-widest">{userData.role}</p>
 
                             <div className="mt-8 space-y-4">
                                 <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100 group hover:bg-green-50 hover:border-green-100 transition-all duration-300">
@@ -152,9 +193,17 @@ const Header = () => {
                                     </div>
                                     <div className="text-left">
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email</p>
-                                        <p className="text-gray-700 font-semibold">{userData.email}</p>
+                                        <p className="text-gray-700 font-semibold">{userData.email || "—"}</p>
                                     </div>
                                 </div>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full mt-4 py-3 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                    Logout
+                                </button>
                             </div>
                         </div>
                     </div>
