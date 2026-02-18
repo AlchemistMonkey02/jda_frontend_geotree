@@ -1,34 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import client from '../api/client';
 import { ENDPOINTS } from '../api/config';
 import { useToast } from '../context/ToastContext';
 import PlantSearch from '../components/plantation/PlantSearch';
 import EventSearch from '../components/plantation/EventSearch';
-
-// Fix for default marker icon in Leaflet + React
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: markerIcon2x,
-    iconUrl: markerIcon,
-    shadowUrl: markerShadow,
-});
-
-// Custom Tree Icon
-const treeIcon = new L.Icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684907.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40]
-});
+import LocationMap from '../components/plantation/LocationMap';
 
 // Tree Data for Dropdowns
 // Tree Data for Dropdowns (Now loaded from API, but keeping structure for reference if needed or as fallback)
@@ -328,6 +306,18 @@ const IndividualPage = () => {
                         <h3 className="text-xs font-black text-[#1a2e15] uppercase tracking-wide">Details & Location</h3>
                     </div>
 
+                    {/* Compact Map - Replaced with LocationMap */}
+                    <div className="mt-1">
+                        <LocationMap
+                            initialPosition={position}
+                            onLocationUpdate={(data) => {
+                                setPosition([data.lat, data.lng]);
+                                // Store address details if needed, e.g in a separate state or plantData
+                                // console.log("New Address:", data.address);
+                            }}
+                        />
+                    </div>
+
                     {/* Form Grid */}
                     <div className="grid grid-cols-2 gap-2">
                         {/* Plant Name Dropdown */}
@@ -402,25 +392,6 @@ const IndividualPage = () => {
                                 </select>
                                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Compact Map */}
-                    <div className="mt-1">
-                        <div className="relative w-full h-24 rounded-lg overflow-hidden border border-gray-200 shadow-inner">
-                            <MapContainer center={position} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                                <TileLayer attribution='&copy; Esri' url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-                                <Marker position={position} icon={treeIcon}><Popup>Lat: {position[0]}, Long: {position[1]}</Popup></Marker>
-                            </MapContainer>
-                            <div className="absolute top-2 right-2 flex flex-col gap-2 z-[400]">
-                                <button className="w-6 h-6 bg-white rounded-md shadow-md text-[#2d4a22] flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                                </button>
-                            </div>
-                            <button className="absolute bottom-2 right-2 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm text-[#2d4a22] text-[9px] font-bold flex items-center gap-1 z-[400] hover:bg-white active:scale-95 transition-all border border-gray-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><location x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-                                Current Location
-                            </button>
                         </div>
                     </div>
                 </div>
