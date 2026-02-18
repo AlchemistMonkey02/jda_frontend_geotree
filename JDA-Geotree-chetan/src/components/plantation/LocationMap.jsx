@@ -17,6 +17,22 @@ L.Icon.Default.mergeOptions({
     shadowUrl: markerShadow,
 });
 
+// Custom Black marker icon
+const blackIcon = L.divIcon({
+    html: `
+        <div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="black" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3" fill="white"></circle>
+            </svg>
+        </div>
+    `,
+    className: 'custom-black-icon',
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30]
+});
+
 const RecenterMap = ({ center }) => {
     const map = useMap();
     useEffect(() => {
@@ -161,7 +177,7 @@ const LocationMap = React.forwardRef(({ onLocationUpdate, initialPosition }, ref
                         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                     />
 
-                    <Marker position={position}>
+                    <Marker position={position} icon={blackIcon}>
                         <Popup>
                             <div className="text-center">
                                 <p className="font-bold text-[10px]">Current Location</p>

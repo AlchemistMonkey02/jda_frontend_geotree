@@ -173,7 +173,7 @@ const MyCertificates = () => {
 
                         {/* Certificate Content - Simulated */}
                         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50 flex flex-col items-center justify-center">
-                            <div id="certificate-download-area" className="w-full aspect-[1/1.414] sm:aspect-[1.414/1] bg-white border-[8px] border-[#2d4a22] p-6 relative shadow-xl flex flex-col items-center text-center justify-center gap-4 bg-[url('/images/pattern-bg.png')] bg-repeat">
+                            <div id="certificate-download-area" className="w-full aspect-[1/1.414] sm:aspect-[1.414/1] bg-white border-[8px] border-[#2d4a22] p-6 relative shadow-xl flex flex-col items-center text-center justify-center gap-4 bg-[#fcfdfa]">
                                 <div className="absolute inset-0 border-2 border-[#7fb55c] m-1.5 pointer-events-none"></div>
 
                                 <img src="/images/jda.png" alt="Logo" className="h-12 w-auto mb-1 opacity-90" />

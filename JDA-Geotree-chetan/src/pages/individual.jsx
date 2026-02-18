@@ -55,7 +55,6 @@ const IndividualPage = () => {
         heightUnit: 'Feet', // Added unit state
         date: '',
         areaType: 'urban',
-        areaType: 'urban',
         category: '',
         eventCode: '',
         eventName: '' // Added to store event name for display/logic

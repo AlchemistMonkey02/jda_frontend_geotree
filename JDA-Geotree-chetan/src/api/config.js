@@ -1,4 +1,5 @@
-export const API_BASE_URL = 'http://localhost:50001/api';
+// export const API_BASE_URL = 'http://localhost:50001/api';
+export const API_BASE_URL = 'https://jda.geotree.io/api';
 
 export const ENDPOINTS = {
     AUTH: {
