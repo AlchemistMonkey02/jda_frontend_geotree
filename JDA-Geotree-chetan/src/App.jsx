@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import Header from './components/layout/Header'
-import Footer from './components/layout/Footer'
+import Header from './components/layout/header'
+import Footer from './components/layout/footer'
 import Home from './pages/Home'
-import IndividualPage from './pages/Individual'
+import IndividualPage from './pages/individual'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import MyCertificates from './pages/MyCertificates'
 import HistoryPage from './pages/History'
@@ -61,7 +61,7 @@ function AppContent() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden flex flex-col font-outfit animate-fade-in bg-white">
+    <div className="relative min-h-screen w-full overflow-x-hidden flex flex-col font-outfit bg-white">
       {/* Global Background Image */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-100"
@@ -70,7 +70,7 @@ function AppContent() {
 
       <div className="relative z-10 flex flex-col min-h-screen w-full bg-transparent">
         <Header />
-        <main className="flex-grow pt-[72px] pb-2 flex flex-col">
+        <main className="flex-grow pt-[72px] pb-2 flex flex-col animate-fade-in">
           <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex-grow flex flex-col">
             <Routes>
               <Route path="/" element={<Home />} />

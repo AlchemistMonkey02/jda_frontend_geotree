@@ -7,6 +7,8 @@ import 'leaflet/dist/leaflet.css';
 import client from '../api/client';
 import { ENDPOINTS } from '../api/config';
 import { useToast } from '../context/ToastContext';
+import PlantSearch from '../components/plantation/PlantSearch';
+import EventSearch from '../components/plantation/EventSearch';
 
 // Fix for default marker icon in Leaflet + React
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -29,38 +31,15 @@ const treeIcon = new L.Icon({
 });
 
 // Tree Data for Dropdowns
-const TREE_DATA = [
-    { "id": 1, "name": "Neem", "scientific_name": "Azadirachta indica", "category": "Medicinal" },
-    { "id": 2, "name": "Peepal", "scientific_name": "Ficus religiosa", "category": "Religious" },
-    { "id": 3, "name": "Banyan", "scientific_name": "Ficus benghalensis", "category": "Shade" },
-    { "id": 4, "name": "Mango", "scientific_name": "Mangifera indica", "category": "Fruit" },
-    { "id": 5, "name": "Ashoka", "scientific_name": "Saraca asoca", "category": "Ornamental" },
-    { "id": 6, "name": "Gulmohar", "scientific_name": "Delonix regia", "category": "Ornamental" },
-    { "id": 7, "name": "Teak", "scientific_name": "Tectona grandis", "category": "Timber" },
-    { "id": 8, "name": "Sandalwood", "scientific_name": "Santalum album", "category": "Medicinal" },
-    { "id": 9, "name": "Eucalyptus", "scientific_name": "Eucalyptus globulus", "category": "Commercial" },
-    { "id": 10, "name": "Arjun", "scientific_name": "Terminalia arjuna", "category": "Medicinal" },
-    { "id": 11, "name": "Jamun", "scientific_name": "Syzygium cumini", "category": "Fruit" },
-    { "id": 12, "name": "Amla", "scientific_name": "Phyllanthus emblica", "category": "Medicinal" },
-    { "id": 13, "name": "Kadamba", "scientific_name": "Neolamarckia cadamba", "category": "Shade" },
-    { "id": 14, "name": "Coconut", "scientific_name": "Cocos nucifera", "category": "Fruit" },
-    { "id": 15, "name": "Palm", "scientific_name": "Arecaceae", "category": "Decorative" },
-    { "id": 16, "name": "Pine", "scientific_name": "Pinus", "category": "Timber" },
-    { "id": 17, "name": "Oak", "scientific_name": "Quercus", "category": "Timber" },
-    { "id": 18, "name": "Maple", "scientific_name": "Acer", "category": "Shade" },
-    { "id": 19, "name": "Cherry Blossom", "scientific_name": "Prunus serrulata", "category": "Ornamental" },
-    { "id": 20, "name": "Baobab", "scientific_name": "Adansonia", "category": "Exotic" }
-];
+// Tree Data for Dropdowns (Now loaded from API, but keeping structure for reference if needed or as fallback)
+// const TREE_DATA = [ ... ];
 
 // Extract unique categories
-const CATEGORIES = [...new Set(TREE_DATA.map(tree => tree.category))];
+// Extract unique categories (These might come from API too, but keeping static for now or could fetch)
+const CATEGORIES = ['Medicinal', 'Religious', 'Shade', 'Fruit', 'Ornamental', 'Timber', 'Commercial', 'Decorative', 'Exotic', 'Other'];
 
-const HEIGHT_RANGES = [
-    "0 - 2 (Feet)",
-    "3 - 4 (Feet)",
-    "5 - 6 (Feet)",
-    "6+ (Feet)"
-];
+// Height ranges removed, using dynamic input
+// const HEIGHT_RANGES = [ ... ];
 
 const IndividualPage = () => {
     const { showSuccess, showError } = useToast();
@@ -88,11 +67,16 @@ const IndividualPage = () => {
     // Details - Initialize with keys matching the form
     const [plantData, setPlantData] = useState({
         plantName: '',
+        hindiName: '',
+        scientificName: '',
         height: '',
+        heightUnit: 'Feet', // Added unit state
         date: '',
         areaType: 'urban',
-        category: '', // Added category
-        eventCode: '' // Added for Event tab
+        areaType: 'urban',
+        category: '',
+        eventCode: '',
+        eventName: '' // Added to store event name for display/logic
     });
 
     // Ownership
@@ -104,33 +88,47 @@ const IndividualPage = () => {
     const [certName, setCertName] = useState('');
     const [events, setEvents] = useState([]);
 
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                const response = await client.get(ENDPOINTS.EVENTS.GET_ALL);
-                setEvents(response.data);
-            } catch (error) {
-                console.error("Failed to fetch events", error);
-                // Global error handler will show toast
-            }
-        };
-        fetchEvents();
-    }, []);
+    // Event fetching is now handled by EventSearch component
+    // useEffect(() => {
+    //     const fetchEvents = async () => { ... };
+    //     fetchEvents();
+    // }, []);
 
-    const handlePlantChange = (e) => {
-        const { name, value } = e.target;
+    const handleHeightChange = (e) => {
+        setPlantData(prev => ({ ...prev, height: e.target.value }));
+    };
+
+    const handleUnitChange = (e) => {
+        const newUnit = e.target.value;
         setPlantData(prev => {
-            const newData = { ...prev, [name]: value };
-
-            // Auto-select category if plant name changes
-            if (name === 'plantName') {
-                const selectedTree = TREE_DATA.find(t => t.name === value);
-                if (selectedTree) {
-                    newData.category = selectedTree.category;
+            let newHeight = prev.height;
+            if (prev.height) {
+                if (newUnit === 'Meter' && prev.heightUnit === 'Feet') {
+                    newHeight = (parseFloat(prev.height) * 0.3048).toFixed(2);
+                } else if (newUnit === 'Feet' && prev.heightUnit === 'Meter') {
+                    newHeight = (parseFloat(prev.height) / 0.3048).toFixed(2);
                 }
             }
-            return newData;
+            return { ...prev, height: newHeight, heightUnit: newUnit };
         });
+    };
+
+    const handlePlantSelect = (plant) => {
+        setPlantData(prev => ({
+            ...prev,
+            plantName: plant.englishName,
+            hindiName: plant.hindiName,
+            scientificName: plant.scientificName,
+            category: plant.category || 'Other'
+        }));
+    };
+
+    const handleEventSelect = (event) => {
+        setPlantData(prev => ({
+            ...prev,
+            eventCode: event.code,
+            eventName: event.name
+        }));
     };
 
     const handleImageUpload = (e, setPreview, setFile) => {
@@ -157,7 +155,7 @@ const IndividualPage = () => {
             if (activeTab === 'event') formData.append('eventCode', plantData.eventCode);
             formData.append('plantName', plantData.plantName);
             formData.append('category', plantData.category);
-            formData.append('height', plantData.height);
+            formData.append('height', `${plantData.height} ${plantData.heightUnit}`); // Combine value and unit
             formData.append('areaType', plantData.areaType);
             formData.append('landOwnership', ownership);
             formData.append('lat', position[0]);
@@ -276,28 +274,12 @@ const IndividualPage = () => {
             {/* 3. Main Form Content (Scrollable Area) */}
             <div className="flex flex-col gap-2 animate-fade-in">
 
-                {/* Event Code Field (Visible only for Event Tab) */}
                 {/* Event Selection Trigger (Visible only for Event Tab) */}
                 {activeTab === 'event' && (
-                    <div className="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex flex-col gap-1.5 animate-fade-in-down">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Select Event</label>
-                        <div className="relative">
-                            <select
-                                name="eventCode"
-                                value={plantData.eventCode}
-                                onChange={handlePlantChange}
-                                className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-sm font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] transition-all border border-gray-100 appearance-none"
-                            >
-                                <option value="">Select an Event</option>
-                                {events.map(event => (
-                                    <option key={event._id} value={event.code}>
-                                        {event.name} ({new Date(event.date).toLocaleDateString()}, {event.location})
-                                    </option>
-                                ))}
-                            </select>
-                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                        </div>
-                    </div>
+                    <EventSearch
+                        selectedEvent={plantData.eventName}
+                        onSelect={handleEventSelect}
+                    />
                 )}
 
                 {/* A. Photos (Grid Layout) */}
@@ -350,58 +332,62 @@ const IndividualPage = () => {
                     <div className="grid grid-cols-2 gap-2">
                         {/* Plant Name Dropdown */}
                         <div className="col-span-2">
-                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Plant Name</label>
-                            <div className="relative">
-                                <select
-                                    name="plantName"
-                                    value={plantData.plantName}
-                                    onChange={handlePlantChange}
-                                    className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-xs font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] appearance-none border border-gray-100 placeholder-gray-400"
-                                >
-                                    <option value="">Select Plant</option>
-                                    {TREE_DATA.map(tree => (
-                                        <option key={tree.id} value={tree.name}>{tree.name}</option>
-                                    ))}
-                                </select>
-                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                            </div>
+                            <PlantSearch
+                                selectedPlant={plantData.plantName}
+                                onSelect={handlePlantSelect}
+                            />
+                            {plantData.plantName && (
+                                <div className="mt-2 ml-1 flex flex-col gap-1">
+                                    {plantData.hindiName && (
+                                        <div className="flex items-center gap-1.5 px-2 py-1.5 bg-green-50/50 rounded-lg border border-green-100/50">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Hindi Name:</span>
+                                            <span className="text-[10px] font-bold text-gray-700">{plantData.hindiName}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex gap-2">
+                                        {plantData.scientificName && (
+                                            <div className="flex-1 flex flex-col px-2 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Scientific Name</span>
+                                                <span className="text-[10px] font-medium text-gray-600 italic leading-tight">{plantData.scientificName}</span>
+                                            </div>
+                                        )}
+                                        {plantData.category && (
+                                            <div className="flex-1 flex flex-col px-2 py-1 bg-blue-50/30 rounded-lg border border-blue-100/30">
+                                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Category</span>
+                                                <span className="text-[10px] font-bold text-gray-700 leading-tight">{plantData.category}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Plant Category Dropdown */}
-                        <div className="col-span-2">
-                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Plantation Category</label>
-                            <div className="relative">
-                                <select
-                                    name="category"
-                                    value={plantData.category}
-                                    onChange={handlePlantChange}
-                                    className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-xs font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] appearance-none border border-gray-100"
-                                >
-                                    <option value="">Select Category</option>
-                                    {CATEGORIES.map((cat, index) => (
-                                        <option key={index} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                            </div>
-                        </div>
-
-                        {/* Height Dropdown */}
+                        {/* Height Input with Unit Selection */}
                         <div className="col-span-2">
                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Height</label>
-                            <div className="relative">
-                                <select
-                                    name="height"
-                                    value={plantData.height}
-                                    onChange={handlePlantChange}
-                                    className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-xs font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] appearance-none border border-gray-100"
-                                >
-                                    <option value="">Select Height</option>
-                                    {HEIGHT_RANGES.map((range, index) => (
-                                        <option key={index} value={range}>{range}</option>
-                                    ))}
-                                </select>
-                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="number"
+                                        name="height"
+                                        value={plantData.height}
+                                        onChange={handleHeightChange}
+                                        placeholder="Enter Height"
+                                        className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-xs font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] border border-gray-100 placeholder-gray-400"
+                                    />
+                                </div>
+                                <div className="relative w-1/3">
+                                    <select
+                                        name="heightUnit"
+                                        value={plantData.heightUnit}
+                                        onChange={handleUnitChange}
+                                        className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-xs font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] appearance-none border border-gray-100"
+                                    >
+                                        <option value="Feet">Feet</option>
+                                        <option value="Meter">Meter</option>
+                                    </select>
+                                    <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                </div>
                             </div>
                         </div>
 
