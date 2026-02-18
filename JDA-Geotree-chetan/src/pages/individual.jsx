@@ -37,8 +37,11 @@ const IndividualPage = () => {
     const fileInputRef2 = useRef(null);
     const [image1Preview, setImage1Preview] = useState(null);
     const [image1File, setImage1File] = useState(null);
+    const [image1Processing, setImage1Processing] = useState(false);
     const [image2Preview, setImage2Preview] = useState(null);
     const [image2File, setImage2File] = useState(null);
+    const [image2Processing, setImage2Processing] = useState(false);
+    const [selfieProcessing, setSelfieProcessing] = useState(false);
 
     const locationMapRef = useRef(null);
 
@@ -134,30 +137,35 @@ const IndividualPage = () => {
         }));
     };
 
-    const handleImageUpload = async (e, setPreview, setFile) => {
+    const handleImageUpload = async (e, setPreview, setFile, setProcessing) => {
         const file = e.target.files[0];
         if (file) {
+            setProcessing(true);
             try {
                 // Resize image like WhatsApp (max 1280px on longest side, 0.8 quality)
                 const resizedFile = await resizeImage(file, 1280, 0.8);
                 setFile(resizedFile);
 
                 const reader = new FileReader();
-                reader.onloadend = () => setPreview(reader.result);
+                reader.onloadend = () => {
+                    setPreview(reader.result);
+                    setProcessing(false);
+                };
                 reader.readAsDataURL(resizedFile);
 
                 // Refresh location on image capture/upload
                 if (locationMapRef.current) {
                     locationMapRef.current.refreshLocation();
-                    showSuccess("Processing image and updating location...");
                 }
             } catch (error) {
                 console.error("Image processing failed", error);
                 showError("Failed to process image");
-                // Fallback to original
                 setFile(file);
                 const reader = new FileReader();
-                reader.onloadend = () => setPreview(reader.result);
+                reader.onloadend = () => {
+                    setPreview(reader.result);
+                    setProcessing(false);
+                };
                 reader.readAsDataURL(file);
             }
         }
@@ -256,21 +264,25 @@ const IndividualPage = () => {
     const handleSelfieChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
+            setSelfieProcessing(true);
             try {
                 // Resize selfie like WhatsApp
                 const resizedFile = await resizeImage(file, 1280, 0.8);
-                setFile(resizedFile);
+                setSelfieFile(resizedFile);
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     setSelfiePreview(reader.result);
+                    setSelfieProcessing(false);
                 };
                 reader.readAsDataURL(resizedFile);
             } catch (error) {
                 console.error("Selfie processing failed", error);
-                // Fallback
-                setFile(file);
+                setSelfieFile(file);
                 const reader = new FileReader();
-                reader.onloadend = () => setSelfiePreview(reader.result);
+                reader.onloadend = () => {
+                    setSelfiePreview(reader.result);
+                    setSelfieProcessing(false);
+                };
                 reader.readAsDataURL(file);
             }
         }
@@ -326,10 +338,10 @@ const IndividualPage = () => {
                 <div className="grid grid-cols-2 gap-2">
                     {/* Photo 1: Site Prep */}
                     <div className="flex flex-col gap-1">
-                        <input type="file" ref={fileInputRef1} onChange={(e) => handleImageUpload(e, setImage1Preview, setImage1File)} className="hidden" accept="image/*" />
-                        <div onClick={() => fileInputRef1.current.click()} className="bg-white rounded-xl border border-dashed border-gray-300 aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-[#7fb55c] hover:bg-green-50/30 transition-all relative overflow-hidden group shadow-sm">
+                        <input type="file" ref={fileInputRef1} onChange={(e) => handleImageUpload(e, setImage1Preview, setImage1File, setImage1Processing)} className="hidden" accept="image/*" />
+                        <div onClick={() => !image1Processing && fileInputRef1.current.click()} className="bg-white rounded-xl border border-dashed border-gray-300 aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-[#7fb55c] hover:bg-green-50/30 transition-all relative overflow-hidden group shadow-sm">
                             {image1Preview ? (
-                                <img src={image1Preview} alt="Site Prep" className="absolute inset-0 w-full h-full object-cover" />
+                                <img src={image1Preview} alt="Site Prep" className={`absolute inset-0 w-full h-full object-cover ${image1Processing ? 'opacity-40 blur-[2px]' : ''}`} />
                             ) : (
                                 <>
                                     <div className="w-16 h-16 mb-1 p-2 bg-green-50 rounded-full text-[#7fb55c] group-hover:scale-110 transition-transform flex items-center justify-center">
@@ -338,16 +350,22 @@ const IndividualPage = () => {
                                     <p className="text-[9px] text-gray-400 font-semibold text-center leading-tight px-2">Tap to upload<br />site digging</p>
                                 </>
                             )}
+                            {image1Processing && (
+                                <div className="absolute inset-0 bg-white/50 flex flex-col items-center justify-center gap-2">
+                                    <div className="w-6 h-6 border-2 border-[#7fb55c] border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-[8px] font-black text-[#2d4a22] uppercase tracking-widest">Processing</span>
+                                </div>
+                            )}
                         </div>
                         <p className="text-center text-[9px] font-bold text-[#2d4a22] uppercase tracking-wide">1. Site Preparation</p>
                     </div>
 
                     {/* Photo 2: Plantation */}
                     <div className="flex flex-col gap-1">
-                        <input type="file" ref={fileInputRef2} onChange={(e) => handleImageUpload(e, setImage2Preview, setImage2File)} className="hidden" accept="image/*" />
-                        <div onClick={() => fileInputRef2.current.click()} className="bg-white rounded-xl border border-dashed border-gray-300 aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-[#7fb55c] hover:bg-green-50/30 transition-all relative overflow-hidden group shadow-sm">
+                        <input type="file" ref={fileInputRef2} onChange={(e) => handleImageUpload(e, setImage2Preview, setImage2File, setImage2Processing)} className="hidden" accept="image/*" />
+                        <div onClick={() => !image2Processing && fileInputRef2.current.click()} className="bg-white rounded-xl border border-dashed border-gray-300 aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-[#7fb55c] hover:bg-green-50/30 transition-all relative overflow-hidden group shadow-sm">
                             {image2Preview ? (
-                                <img src={image2Preview} alt="Planting" className="absolute inset-0 w-full h-full object-cover" />
+                                <img src={image2Preview} alt="Planting" className={`absolute inset-0 w-full h-full object-cover ${image2Processing ? 'opacity-40 blur-[2px]' : ''}`} />
                             ) : (
                                 <>
                                     <div className="w-16 h-16 mb-1 p-2 bg-green-50 rounded-full text-[#7fb55c] group-hover:scale-110 transition-transform flex items-center justify-center">
@@ -355,6 +373,12 @@ const IndividualPage = () => {
                                     </div>
                                     <p className="text-[9px] text-gray-400 font-semibold text-center leading-tight px-2">Tap to upload<br />plantation</p>
                                 </>
+                            )}
+                            {image2Processing && (
+                                <div className="absolute inset-0 bg-white/50 flex flex-col items-center justify-center gap-2">
+                                    <div className="w-6 h-6 border-2 border-[#7fb55c] border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-[8px] font-black text-[#2d4a22] uppercase tracking-widest">Processing</span>
+                                </div>
                             )}
                         </div>
                         <p className="text-center text-[9px] font-bold text-[#2d4a22] uppercase tracking-wide">2. Plantation</p>
@@ -549,16 +573,22 @@ const IndividualPage = () => {
                                             className="hidden"
                                         />
                                         <div
-                                            onClick={() => selfieInputRef.current?.click()}
-                                            className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-[#7fb55c] transition-all group active:scale-[0.98]"
+                                            onClick={() => !selfieProcessing && selfieInputRef.current?.click()}
+                                            className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-[#7fb55c] transition-all group active:scale-[0.98] overflow-hidden"
                                         >
                                             {selfiePreview ? (
-                                                <img src={selfiePreview} alt="Selfie preview" className="w-full h-32 object-cover rounded-lg" />
+                                                <img src={selfiePreview} alt="Selfie preview" className={`w-full h-32 object-cover rounded-lg ${selfieProcessing ? 'opacity-40 blur-[2px]' : ''}`} />
                                             ) : (
                                                 <>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-[#7fb55c] mb-2 transition-colors"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
                                                     <span className="text-xs text-gray-500 font-medium group-hover:text-[#7fb55c] transition-colors">Click to upload</span>
                                                 </>
+                                            )}
+                                            {selfieProcessing && (
+                                                <div className="absolute inset-0 bg-white/50 flex flex-col items-center justify-center gap-2">
+                                                    <div className="w-8 h-8 border-3 border-[#7fb55c] border-t-transparent rounded-full animate-spin"></div>
+                                                    <span className="text-[10px] font-black text-[#2d4a22] uppercase tracking-widest">Processing Selfie</span>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

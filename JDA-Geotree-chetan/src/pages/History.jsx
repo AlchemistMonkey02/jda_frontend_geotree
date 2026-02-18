@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import client from '../api/client';
 import { ENDPOINTS } from '../api/config';
 
@@ -218,37 +219,39 @@ const HistoryPage = () => {
             </div>
 
             {/* Image Preview Modal */}
-            {selectedImage && (
+            {selectedImage && createPortal(
                 <div
-                    className="fixed inset-0 z-[60] flex flex-col items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+                    className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-fade-in"
                     onClick={() => setSelectedImage(null)}
                 >
                     <div
-                        className="relative max-w-2xl w-full flex flex-col items-center bg-white rounded-[2.5rem] p-2 shadow-2xl animate-scale-up"
+                        className="relative max-w-3xl w-full flex flex-col items-center bg-white rounded-[2.5rem] p-2 shadow-2xl animate-scale-up"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
                             onClick={() => setSelectedImage(null)}
-                            className="absolute -top-12 sm:top-4 right-0 sm:right-4 w-10 h-10 rounded-full bg-white/20 sm:bg-gray-100 hover:bg-white/40 sm:hover:bg-gray-200 text-white sm:text-gray-500 flex items-center justify-center transition-all active:scale-95 z-10"
+                            className="absolute -top-14 right-2 w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all active:scale-95 z-20 shadow-lg"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                         </button>
 
                         <img
                             src={selectedImage.src}
                             alt={selectedImage.title}
-                            className="w-full h-auto max-h-[80vh] object-contain rounded-[2rem]"
+                            className="w-full h-auto max-h-[85vh] object-contain rounded-[2rem] shadow-sm"
                         />
-                        <div className="w-full py-4 flex justify-center">
-                            <p className="text-[#2d4a22] font-black text-xs sm:text-sm tracking-widest uppercase bg-[#EAF5E5] px-6 py-2 rounded-full border border-[#dcebd6]">
+                        <div className="w-full py-5 flex justify-center">
+                            <p className="text-[#2d4a22] font-black text-xs sm:text-sm tracking-widest uppercase bg-[#EAF5E5] px-8 py-2.5 rounded-full border border-[#dcebd6] shadow-sm">
                                 {selectedImage.title}
                             </p>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
 };
+
 
 export default HistoryPage;
