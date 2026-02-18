@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import client from '../../api/client';
 import { ENDPOINTS } from '../../api/config';
+import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
+    const { showSuccess } = useToast();
+    const { login } = useAuth();
+    const [isSignup, setIsSignup] = useState(false);
     const [mobileNumber, setMobileNumber] = useState('');
     const [otp, setOtp] = useState('');
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
     const [isOtpSent, setIsOtpSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
@@ -12,17 +19,17 @@ const Login = ({ onLogin }) => {
     const handleSendOtp = async (e) => {
         e.preventDefault();
         if (!mobileNumber || mobileNumber.length < 10) {
-            alert('Please enter a valid mobile number');
             return;
         }
+
         setLoading(true);
         try {
-            await axios.post(ENDPOINTS.AUTH.SEND_OTP, { mobileNumber });
+            await client.post(ENDPOINTS.AUTH.SEND_OTP, { mobileNumber });
             setIsOtpSent(true);
-            alert('OTP Sent: 123456'); // Mock OTP alert for dev convenience
+            showSuccess('OTP Sent: 123456'); // Mock OTP
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to send OTP');
+            // Error handled by global interceptor
         } finally {
             setLoading(false);
         }
@@ -32,16 +39,27 @@ const Login = ({ onLogin }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await axios.post(ENDPOINTS.AUTH.LOGIN, { mobileNumber, otp });
-            const { token, user } = response.data;
+            let response;
+            if (isSignup) {
+                response = await client.post(ENDPOINTS.AUTH.SIGNUP, {
+                    name,
+                    email,
+                    mobileNumber,
+                    otp
+                });
+            } else {
+                response = await client.post(ENDPOINTS.AUTH.LOGIN, { mobileNumber, otp });
+            }
 
-            // Save to localStorage
-            localStorage.setItem('user', JSON.stringify({ ...user, token })); // Save flattened for easier access
+            const { token, ...userData } = response.data;
+            const user = { ...userData, token };
 
-            onLogin();
+            showSuccess(`Welcome back, ${user.name}!`);
+            login(user); // Use context to login and switch screen
+
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Login Failed. Invalid OTP?');
+            // Error handled by global interceptor
         } finally {
             setLoading(false);
         }
@@ -79,12 +97,38 @@ const Login = ({ onLogin }) => {
                     {/* Login Heading */}
                     <div className="mb-5 relative">
                         <h2 className="text-3xl font-bold text-white tracking-wide">
-                            {isOtpSent ? 'Verify OTP' : 'Login'}
+                            {isOtpSent ? 'Verify OTP' : (isSignup ? 'Register' : 'Login')}
                         </h2>
                         <div className="absolute -bottom-2 left-0 w-12 h-1 bg-[#E8EDDE] rounded-full"></div>
                     </div>
 
                     <form onSubmit={isOtpSent ? handleLogin : handleSendOtp} className="w-full flex flex-col gap-4">
+
+                        {/* Signup Fields */}
+                        {isSignup && !isOtpSent && (
+                            <div className="flex flex-col gap-4 animate-fade-in-down">
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[#98AA88] font-bold text-sm tracking-wide">Full Name</label>
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Enter your name"
+                                        className="bg-transparent border-b-2 border-[#E8EDDE]/50 focus:border-[#E8EDDE] text-white placeholder-white/50 focus:outline-none w-full font-medium pb-2 transition-colors"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[#98AA88] font-bold text-sm tracking-wide">Email (Optional)</label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Enter your email"
+                                        className="bg-transparent border-b-2 border-[#E8EDDE]/50 focus:border-[#E8EDDE] text-white placeholder-white/50 focus:outline-none w-full font-medium pb-2 transition-colors"
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Mobile Number */}
                         <div className="flex flex-col gap-2">
@@ -131,30 +175,46 @@ const Login = ({ onLogin }) => {
 
                         {/* Remember & Resend */}
                         <div className="flex items-center justify-between text-xs sm:text-sm mt-1">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={rememberMe}
-                                    onChange={(e) => setRememberMe(e.target.checked)}
-                                    className="w-4 h-4 rounded border-[#E8EDDE] bg-transparent text-[#2d4a22] focus:ring-0 checked:bg-[#E8EDDE] transition-all"
-                                />
-                                <span className="text-[#98AA88] group-hover:text-white transition-colors">Remember Me</span>
-                            </label>
+                            {!isSignup && (
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="w-4 h-4 rounded border-[#E8EDDE] bg-transparent text-[#2d4a22] focus:ring-0 checked:bg-[#E8EDDE] transition-all"
+                                    />
+                                    <span className="text-[#98AA88] group-hover:text-white transition-colors">Remember Me</span>
+                                </label>
+                            )}
                             {isOtpSent && (
-                                <button type="button" onClick={handleSendOtp} className="text-[#E1E4CA] underline underline-offset-2 hover:text-white transition-colors">
+                                <button type="button" onClick={handleSendOtp} className="text-[#E1E4CA] underline underline-offset-2 hover:text-white transition-colors ml-auto">
                                     Resend otp?
                                 </button>
                             )}
                         </div>
 
-                        {/* Login Button */}
+                        {/* Action Button */}
                         <button
                             type="submit"
                             disabled={loading}
                             className="w-full py-4 mt-4 bg-[#E8EDDE] text-[#2d4a22] font-bold text-lg rounded-xl shadow-lg hover:bg-white active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Processing...' : (isOtpSent ? 'Verify & Login' : 'Send OTP')}
+                            {loading ? 'Processing...' : (isOtpSent ? (isSignup ? 'Verify & Register' : 'Verify & Login') : 'Send OTP')}
                         </button>
+
+                        {/* Switch Mode */}
+                        {!isOtpSent && (
+                            <div className="flex items-center justify-center gap-2 mt-2">
+                                <span className="text-[#98AA88] text-sm">{isSignup ? 'Already have an account?' : "Don't have an account?"}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsSignup(!isSignup); setMobileNumber(''); setName(''); setEmail(''); }}
+                                    className="text-white font-bold text-sm underline hover:text-[#E8EDDE] transition-colors"
+                                >
+                                    {isSignup ? 'Login' : 'Sign Up'}
+                                </button>
+                            </div>
+                        )}
 
                         {isOtpSent && (
                             <button

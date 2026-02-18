@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { ENDPOINTS, getAuthHeaders } from '../api/config';
+import client from '../api/client';
+import { ENDPOINTS } from '../api/config';
 
 const HistoryPage = () => {
     const navigate = useNavigate();
@@ -14,7 +14,7 @@ const HistoryPage = () => {
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const response = await axios.get(ENDPOINTS.PLANTATION.HISTORY, getAuthHeaders());
+                const response = await client.get(ENDPOINTS.PLANTATION.HISTORY);
                 setHistory(response.data);
             } catch (err) {
                 console.error(err);

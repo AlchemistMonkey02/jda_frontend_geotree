@@ -4,8 +4,9 @@ import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
-import { ENDPOINTS, getMultipartHeaders } from '../api/config';
+import client from '../api/client';
+import { ENDPOINTS } from '../api/config';
+import { useToast } from '../context/ToastContext';
 
 // Fix for default marker icon in Leaflet + React
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -62,6 +63,7 @@ const HEIGHT_RANGES = [
 ];
 
 const IndividualPage = () => {
+    const { showSuccess, showError } = useToast();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('individual');
 
@@ -100,6 +102,20 @@ const IndividualPage = () => {
     const [plantationId, setPlantationId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [certName, setCertName] = useState('');
+    const [events, setEvents] = useState([]);
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const response = await client.get(ENDPOINTS.EVENTS.GET_ALL);
+                setEvents(response.data);
+            } catch (error) {
+                console.error("Failed to fetch events", error);
+                // Global error handler will show toast
+            }
+        };
+        fetchEvents();
+    }, []);
 
     const handlePlantChange = (e) => {
         const { name, value } = e.target;
@@ -130,7 +146,7 @@ const IndividualPage = () => {
     const handleSubmit = async () => {
         // Validation
         if (!plantData.plantName || !image1File || !image2File) {
-            alert("Please fill all details and upload both photos.");
+            showError("Please fill all details and upload both photos.");
             return;
         }
 
@@ -149,16 +165,19 @@ const IndividualPage = () => {
             formData.append('siteImage', image1File);
             formData.append('plantationImage', image2File);
 
-            const response = await axios.post(ENDPOINTS.PLANTATION.CREATE, formData, getMultipartHeaders());
+            const response = await client.post(ENDPOINTS.PLANTATION.CREATE, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
             if (response.data.success) {
                 setPlantationId(response.data.data._id);
                 setIsModalOpen(true);
                 setModalStep('selection');
+                showSuccess('Plantation submitted successfully!');
             }
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to submit plantation.');
+            // Global interceptor handles error toast
         } finally {
             setLoading(false);
         }
@@ -166,7 +185,7 @@ const IndividualPage = () => {
 
     const handleGenerateCertificate = async () => {
         if (!selfieFile) {
-            alert("Please upload a selfie for the certificate.");
+            showError("Please upload a selfie for the certificate.");
             return;
         }
 
@@ -177,12 +196,15 @@ const IndividualPage = () => {
             formData.append('name', certName);
             formData.append('selfieImage', selfieFile);
 
-            await axios.post(ENDPOINTS.CERTIFICATE.GENERATE, formData, getMultipartHeaders());
+            await client.post(ENDPOINTS.CERTIFICATE.GENERATE, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
+            showSuccess('Certificate generated!');
             navigate('/my-certificates');
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to generate certificate.');
+            // Global interceptor handles error toast
         } finally {
             setLoading(false);
         }
@@ -255,17 +277,26 @@ const IndividualPage = () => {
             <div className="flex flex-col gap-2 animate-fade-in">
 
                 {/* Event Code Field (Visible only for Event Tab) */}
+                {/* Event Selection Trigger (Visible only for Event Tab) */}
                 {activeTab === 'event' && (
                     <div className="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex flex-col gap-1.5 animate-fade-in-down">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Event Code / ID</label>
-                        <input
-                            type="text"
-                            name="eventCode"
-                            value={plantData.eventCode}
-                            onChange={handlePlantChange}
-                            placeholder="Enter Event Code"
-                            className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-sm font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] transition-all border border-gray-100"
-                        />
+                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Select Event</label>
+                        <div className="relative">
+                            <select
+                                name="eventCode"
+                                value={plantData.eventCode}
+                                onChange={handlePlantChange}
+                                className="w-full bg-[#f8f9fa] rounded-lg py-2 px-3 text-sm font-semibold text-gray-700 outline-none focus:ring-1 focus:ring-[#7fb55c] transition-all border border-gray-100 appearance-none"
+                            >
+                                <option value="">Select an Event</option>
+                                {events.map(event => (
+                                    <option key={event._id} value={event.code}>
+                                        {event.name} ({new Date(event.date).toLocaleDateString()}, {event.location})
+                                    </option>
+                                ))}
+                            </select>
+                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        </div>
                     </div>
                 )}
 

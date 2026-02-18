@@ -1,37 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import Home from './pages/Home'
 import IndividualPage from './pages/Individual'
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import MyCertificates from './pages/MyCertificates'
 import HistoryPage from './pages/History'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import Login from './components/auth/Login'
 import SplashScreen from './components/SplashScreen'
 
+import { ToastProvider, useToast } from './context/ToastContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import client from './api/client';
+
+// Axios Interceptor Component to use Hooks
+const AxiosInterceptor = () => {
+  const { showError } = useToast();
+  const { logout } = useAuth(); // Use logout from context
+
+  useEffect(() => {
+    const interceptor = client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const message = error.response?.data?.message || error.message || 'Something went wrong';
+
+        if (error.response?.status === 401) {
+          showError('Session expired. Please login again.');
+          logout(); // Use context logout instead of direct localStorage/window.location
+        } else if (error.response?.status === 500) {
+          showError(`Server Error: ${message}`);
+        } else {
+          showError(message);
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => client.interceptors.response.eject(interceptor);
+  }, [showError, logout]);
+
+  return null;
+};
+
 function AppContent() {
-  const location = useLocation();
-  const [showSplash, setShowSplash] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [showLogin, setShowLogin] = useState(false);
+  const { currentScreen, completeOnboarding, finishSplash, loading } = useAuth();
 
-  if (showOnboarding) {
-    return <OnboardingFlow onComplete={() => {
-      setShowOnboarding(false);
-      setShowLogin(true);
-    }} />;
+  if (loading) return null; // Or a loading spinner
+
+  if (currentScreen === 'ONBOARDING') {
+    return <OnboardingFlow onComplete={completeOnboarding} />;
   }
 
-  if (showLogin) {
-    return <Login onLogin={() => {
-      setShowLogin(false);
-      setShowSplash(true);
-    }} />;
+  if (currentScreen === 'LOGIN') {
+    return <Login />;
   }
 
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  if (currentScreen === 'SPLASH') {
+    return <SplashScreen onFinish={finishSplash} />;
   }
 
   return (
@@ -63,9 +89,14 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ToastProvider>
+      <AuthProvider>
+        <AxiosInterceptor />
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
+    </ToastProvider>
   )
 }
 

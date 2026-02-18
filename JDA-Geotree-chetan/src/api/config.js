@@ -17,6 +17,9 @@ export const ENDPOINTS = {
     },
     DASHBOARD: {
         STATS: `${API_BASE_URL}/dashboard/stats`
+    },
+    EVENTS: {
+        GET_ALL: `${API_BASE_URL}/events`
     }
 };
 

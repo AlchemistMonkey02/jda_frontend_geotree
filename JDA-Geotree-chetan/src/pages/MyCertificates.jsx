@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import axios from 'axios';
-import { ENDPOINTS, getAuthHeaders } from '../api/config';
+import client from '../api/client';
+import { ENDPOINTS } from '../api/config';
+import { useAuth } from '../context/AuthContext';
 
 const MyCertificates = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [selectedCert, setSelectedCert] = useState(null);
     const [certificates, setCertificates] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,7 +19,7 @@ const MyCertificates = () => {
     useEffect(() => {
         const fetchCertificates = async () => {
             try {
-                const response = await axios.get(ENDPOINTS.CERTIFICATE.MY_CERTIFICATES, getAuthHeaders());
+                const response = await client.get(ENDPOINTS.CERTIFICATE.MY_CERTIFICATES);
                 setCertificates(response.data);
             } catch (err) {
                 console.error(err);
@@ -67,7 +69,7 @@ const MyCertificates = () => {
 
     return (
         <div className="flex flex-col gap-2 w-full relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-2 pb-6 font-outfit">
-            {/* Header Section */}
+            {/* ... (Header Section remains same) ... */}
             <div className="sticky top-[60px] sm:top-[72px] z-30 bg-[#fcfdfa]/80 backdrop-blur-sm py-1.5 mb-0.5 transition-all">
                 <div className="relative flex items-center justify-center">
                     <button
@@ -181,7 +183,7 @@ const MyCertificates = () => {
 
                                 <p className="text-gray-500 mt-2 text-sm sm:text-base">This is to certify that</p>
                                 <h2 className="text-xl sm:text-3xl font-cursive text-[#2d4a22] border-b-2 border-[#dcebd6] px-6 py-1 font-bold">
-                                    {JSON.parse(localStorage.getItem('user'))?.name || "User"}
+                                    {user?.name || "User"}
                                 </h2>
 
                                 <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mt-1 max-w-[80%]">

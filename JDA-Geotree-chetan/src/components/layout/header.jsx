@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { ENDPOINTS, getAuthHeaders } from '../../api/config';
+import client from '../../api/client';
+import { ENDPOINTS } from '../../api/config';
+import { useAuth } from '../../context/AuthContext';
 
 const Header = () => {
     const navigate = useNavigate();
+    const { user, logout } = useAuth(); // Use Auth Context
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [userData, setUserData] = useState({
@@ -17,9 +19,8 @@ const Header = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const user = JSON.parse(localStorage.getItem('user'));
                 if (user && user.token) {
-                    // Optimistically set from local storage first if available
+                    // Optimistically set from context
                     setUserData(prev => ({
                         ...prev,
                         name: user.name || prev.name,
@@ -28,7 +29,8 @@ const Header = () => {
                         role: user.role || prev.role
                     }));
 
-                    const response = await axios.get(ENDPOINTS.AUTH.PROFILE, getAuthHeaders());
+                    // Fetch latest details using client (auto-adds token)
+                    const response = await client.get(ENDPOINTS.AUTH.PROFILE);
                     const { name, mobileNumber, email, role } = response.data;
                     setUserData({
                         name: name || "User",
@@ -39,16 +41,14 @@ const Header = () => {
                 }
             } catch (error) {
                 console.error("Failed to fetch profile:", error);
-                // Optionally redirect to login if 401? For now just stay.
             }
         };
 
         fetchProfile();
-    }, []);
+    }, [user]); // Re-run if user context changes
 
     const handleLogout = () => {
-        localStorage.removeItem('user');
-        navigate('/login');
+        logout(); // Use context logout
     };
 
     return (
