@@ -83,10 +83,10 @@ const HistoryPage = () => {
                         <div key={item.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative">
 
                             {/* Images at Top Right */}
-                            <div className="absolute top-2 right-2 flex gap-1.5 z-10">
+                            <div className="absolute top-2 right-2 flex gap-1 z-10">
                                 {item.images.site && (
                                     <div
-                                        className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden cursor-pointer shadow-sm border border-gray-100 group/img"
+                                        className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden cursor-pointer shadow-sm border border-gray-100 group/img"
                                         onClick={() => setSelectedImage({ src: item.images.site, title: "Site Preparation Photo" })}
                                     >
                                         <img
@@ -95,12 +95,11 @@ const HistoryPage = () => {
                                             className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-300"
                                             onError={(e) => e.target.src = '/images/logo.png'}
                                         />
-                                        <div className="absolute inset-0 bg-black/5 hover:bg-transparent transition-colors"></div>
                                     </div>
                                 )}
                                 {item.images.plantation && (
                                     <div
-                                        className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden cursor-pointer shadow-sm border border-gray-100 group/img"
+                                        className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden cursor-pointer shadow-sm border border-gray-100 group/img"
                                         onClick={() => setSelectedImage({ src: item.images.plantation, title: "Plantation Photo" })}
                                     >
                                         <img
@@ -109,7 +108,22 @@ const HistoryPage = () => {
                                             className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-300"
                                             onError={(e) => e.target.src = '/images/logo.png'}
                                         />
-                                        <div className="absolute inset-0 bg-black/5 hover:bg-transparent transition-colors"></div>
+                                    </div>
+                                )}
+                                {item.images.selfie && (
+                                    <div
+                                        className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden cursor-pointer shadow-sm border border-gray-100 group/img"
+                                        onClick={() => setSelectedImage({ src: item.images.selfie, title: "Certificate Selfie" })}
+                                    >
+                                        <img
+                                            src={item.images.selfie}
+                                            alt="Selfie"
+                                            className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-300"
+                                            onError={(e) => e.target.src = '/images/logo.png'}
+                                        />
+                                        <div className="absolute top-0 right-0 bg-[#7fb55c] p-0.5 rounded-bl-md">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 24 24" fill="white"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -123,33 +137,48 @@ const HistoryPage = () => {
                                     </span>
                                 </div>
 
-                                {/* Details Section */}
-                                <div className="flex-grow flex flex-col gap-1">
+                                {/* Details / Info Column */}
+                                <div className="flex-grow flex flex-col gap-1.5">
                                     <div>
                                         <h3 className="text-sm sm:text-base font-bold text-[#2d4a22] leading-tight flex items-center gap-1.5 flex-wrap">
                                             {item.plantName}
-                                            <span className="inline-flex bg-[#f0fdf4] text-[#7fb55c] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#dcebd6]">
-                                                Verified
+                                            <span className={`inline-flex ${item.status === 'verified' ? 'bg-[#f0fdf4] text-[#7fb55c]' : item.status === 'pending' ? 'bg-orange-50 text-orange-500' : 'bg-red-50 text-red-500'} text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${item.status === 'verified' ? 'border-[#dcebd6]' : item.status === 'pending' ? 'border-orange-100' : 'border-red-100'}`}>
+                                                {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
                                             </span>
+                                            {item.certificateId && (
+                                                <span className="inline-flex bg-blue-50 text-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-blue-100 gap-1 items-center">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                                                    Cert Issued
+                                                </span>
+                                            )}
                                         </h3>
-                                        <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide">{item.category} • {item.date}</p>
+                                        <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                            {item.category} • {item.date}
+                                            {item.eventCode && <span className="text-[#7fb55c] ml-1">• Event: {item.eventCode}</span>}
+                                        </p>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-gray-600">
-                                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-md">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c]"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
-                                            <span className="font-medium truncate max-w-[120px] sm:max-w-[200px]">{item.location}</span>
+                                    <div className="flex flex-wrap gap-x-2 gap-y-1 text-[10px] sm:text-xs text-gray-600 mt-0.5">
+                                        <div className="flex items-start gap-1 bg-gray-50 px-2 py-1 rounded-md w-full sm:w-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c] mt-0.5 shrink-0"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+                                            <span className="font-medium flex-1">{item.location}</span>
                                         </div>
                                         {item.height && (
-                                            <div className="flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-md">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c]"><path d="M12 2v20M8 6l4-4 4 4" /></svg>
+                                            <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c] shrink-0"><path d="M12 2v20M8 6l4-4 4 4" /></svg>
                                                 <span className="font-medium">{item.height}</span>
                                             </div>
                                         )}
                                         {item.landOwnership && (
-                                            <div className="flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-md">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c]"><path d="M3 21h18M5 21V7l8-4 8 4v14" /></svg>
+                                            <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c] shrink-0"><path d="M3 21h18M5 21V7l8-4 8 4v14" /></svg>
                                                 <span className="font-medium">{item.landOwnership}</span>
+                                            </div>
+                                        )}
+                                        {item.areaType && (
+                                            <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7fb55c] shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                                <span className="font-medium capitalize">{item.areaType}</span>
                                             </div>
                                         )}
                                     </div>
@@ -161,7 +190,6 @@ const HistoryPage = () => {
                                     )}
                                 </div>
                             </div>
-
                         </div>
                     ))
                 )}
