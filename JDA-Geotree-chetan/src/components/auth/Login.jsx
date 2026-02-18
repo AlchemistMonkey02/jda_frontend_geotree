@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
-    const { showSuccess } = useToast();
+    const { showSuccess, showError } = useToast();
     const { login } = useAuth();
     const [isSignup, setIsSignup] = useState(false);
     const [loginMethod, setLoginMethod] = useState('otp'); // 'otp' | 'password'
@@ -29,12 +29,16 @@ const Login = () => {
 
         setLoading(true);
         try {
-            await client.post(ENDPOINTS.AUTH.SEND_OTP, { mobileNumber });
+            await client.post(ENDPOINTS.AUTH.SEND_OTP, { mobileNumber, isLogin: !isSignup });
             setIsOtpSent(true);
             showSuccess('OTP Sent: 123456'); // Mock OTP
         } catch (error) {
             console.error(error);
-            // Error handled by global interceptor
+            if (error.response && error.response.status === 404) {
+                showError(error.response.data.message || 'User not found');
+            } else {
+                showError('Failed to send OTP. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -71,7 +75,11 @@ const Login = () => {
 
         } catch (error) {
             console.error(error);
-            // Error handled by global interceptor
+            if (error.response) {
+                showError(error.response.data.message || 'Login failed');
+            } else {
+                showError('Login failed. Please check your connection.');
+            }
         } finally {
             setLoading(false);
         }
