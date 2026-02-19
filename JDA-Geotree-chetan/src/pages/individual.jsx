@@ -69,6 +69,7 @@ const IndividualPage = () => {
     // API State
     const [plantationId, setPlantationId] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [certName, setCertName] = useState('');
     const [events, setEvents] = useState([]);
 
@@ -142,8 +143,8 @@ const IndividualPage = () => {
         if (file) {
             setProcessing(true);
             try {
-                // Resize image like WhatsApp (max 1280px on longest side, 0.8 quality)
-                const resizedFile = await resizeImage(file, 1280, 0.8);
+                // Resize image like WhatsApp (max 1000px on longest side, 0.7 quality)
+                const resizedFile = await resizeImage(file, 1000, 0.7);
                 setFile(resizedFile);
 
                 const reader = new FileReader();
@@ -179,6 +180,7 @@ const IndividualPage = () => {
         }
 
         setLoading(true);
+        setUploadProgress(0);
         try {
             const formData = new FormData();
             formData.append('type', activeTab);
@@ -197,7 +199,11 @@ const IndividualPage = () => {
             formData.append('plantationImage', image2File);
 
             const response = await client.post(ENDPOINTS.PLANTATION.CREATE, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (progressEvent) => {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setUploadProgress(percentCompleted);
+                }
             });
 
             if (response.data.success) {
@@ -211,6 +217,7 @@ const IndividualPage = () => {
             // Global interceptor handles error toast
         } finally {
             setLoading(false);
+            setUploadProgress(0);
         }
     };
 
@@ -221,6 +228,7 @@ const IndividualPage = () => {
         }
 
         setLoading(true);
+        setUploadProgress(0);
         try {
             const formData = new FormData();
             formData.append('plantationId', plantationId);
@@ -232,7 +240,11 @@ const IndividualPage = () => {
             formData.append('selfieImage', selfieFile);
 
             await client.post(ENDPOINTS.CERTIFICATE.GENERATE, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (progressEvent) => {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setUploadProgress(percentCompleted);
+                }
             });
 
             showSuccess('Certificate generated!');
@@ -242,6 +254,7 @@ const IndividualPage = () => {
             // Global interceptor handles error toast
         } finally {
             setLoading(false);
+            setUploadProgress(0);
         }
     }
 
@@ -266,8 +279,8 @@ const IndividualPage = () => {
         if (file) {
             setSelfieProcessing(true);
             try {
-                // Resize selfie like WhatsApp
-                const resizedFile = await resizeImage(file, 1280, 0.8);
+                // Resize selfie like WhatsApp (max 1000px, 0.7 quality)
+                const resizedFile = await resizeImage(file, 1000, 0.7);
                 setSelfieFile(resizedFile);
                 const reader = new FileReader();
                 reader.onloadend = () => {
@@ -513,9 +526,14 @@ const IndividualPage = () => {
                 <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="w-full bg-[#2d4a22] text-white py-3 rounded-xl font-black text-base shadow-xl shadow-green-900/10 hover:bg-[#1a2e15] active:scale-95 transition-all mt-4 uppercase tracking-wide disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-[#2d4a22] text-white py-3.5 rounded-xl font-black text-base shadow-xl shadow-green-900/10 hover:bg-[#1a2e15] active:scale-95 transition-all mt-4 uppercase tracking-wide disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                    {loading ? 'Submitting...' : 'Submit'}
+                    {loading ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            {uploadProgress > 0 && uploadProgress < 100 ? `Uploading ${uploadProgress}%` : 'Submitting...'}
+                        </>
+                    ) : 'Submit'}
                 </button>
             </div>
 
@@ -592,8 +610,13 @@ const IndividualPage = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <button onClick={handleGenerateCertificate} disabled={loading} className="w-full py-4 bg-[#7fb55c] text-white rounded-xl font-bold text-lg shadow-lg hover:bg-[#6da04e] hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all mt-2 disabled:opacity-70">
-                                        {loading ? 'Generating...' : 'Generate & Download'}
+                                    <button onClick={handleGenerateCertificate} disabled={loading} className="w-full py-4 bg-[#7fb55c] text-white rounded-xl font-bold text-lg shadow-lg hover:bg-[#6da04e] hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all mt-2 disabled:opacity-70 flex items-center justify-center gap-3">
+                                        {loading ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                {uploadProgress > 0 && uploadProgress < 100 ? `Uploading ${uploadProgress}%` : 'Generating...'}
+                                            </>
+                                        ) : 'Generate & Download'}
                                     </button>
                                     <button onClick={() => setModalStep('selection')} className="text-xs sm:text-sm text-gray-400 font-bold hover:text-gray-600 transition-colors pt-2">← Back to options</button>
                                 </div>

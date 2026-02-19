@@ -2,11 +2,11 @@
  * Resizes an image file to a maximum dimension (width or height), maintaining aspect ratio.
  * This mimics WhatsApp-like behavior by reducing pixel density and file size.
  * @param {File} file - The image file to resize.
- * @param {number} maxDimension - The maximum dimension allowed (default: 1280px).
- * @param {number} quality - The compression quality (0 to 1, default: 0.8).
+ * @param {number} maxDimension - The maximum dimension allowed (default: 1000px for WhatsApp-like speed).
+ * @param {number} quality - The compression quality (0 to 1, default: 0.7).
  * @returns {Promise<File>} - A promise that resolves to the resized File object.
  */
-export const resizeImage = (file, maxDimension = 1280, quality = 0.8) => {
+export const resizeImage = (file, maxDimension = 1000, quality = 0.7) => {
     return new Promise((resolve, reject) => {
         if (!file || !file.type.match(/image.*/)) {
             reject(new Error("File is not an image"));
